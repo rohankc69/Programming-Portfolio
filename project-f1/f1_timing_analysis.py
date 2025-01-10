@@ -125,3 +125,44 @@ class F1TimingAnalyzerApp(tk.Tk):
         self.result_text = tk.Text(self, wrap=tk.WORD, height=30, width=100)
         self.result_text.pack(padx=10, pady=10)
 
+        except FileNotFoundError:
+            print(f"Error: The file {self.lap_times_file} does not exist.")
+            sys.exit(1)
+
+    def display_results(self):
+        """Generate the analysis results as a string (for the frontend to display)."""
+        result = f"Grand Prix: {self.grand_prix_location}\n"
+
+        # Find the fastest lap overall
+        fastest_driver = None
+        fastest_time = float('inf')
+
+        for code, times in self.lap_times_data.items():
+            driver_fastest_time = min(times)
+            if driver_fastest_time < fastest_time:
+                fastest_driver = code
+                fastest_time = driver_fastest_time
+
+        if fastest_driver:
+            driver_info = self.drivers_data.get(fastest_driver, {})
+            driver_name = driver_info.get('name', fastest_driver)
+            result += f"Fastest Lap: {fastest_time:.3f} by {driver_name} ({fastest_driver})\n\n"
+
+        # Fastest Lap Times per Driver
+        result += "Fastest Lap Times per Driver:\n"
+        fastest_times_table = []
+        for index, (code, times) in enumerate(self.lap_times_data.items(), 1):  # Start enumeration at 1
+            driver_info = self.drivers_data.get(code, {})
+            driver_name = driver_info.get('name', code)
+            driver_team = driver_info.get('team', 'Unknown')
+            fastest_time = min(times)
+            fastest_times_table.append([index, driver_name, code, driver_team, f"{fastest_time:.3f}"])
+
+        result += tabulate(fastest_times_table, headers=["SN", "Driver", "Code", "Team", "Fastest Lap Time"], tablefmt="grid")
+        result += "\n\nAverage Times:\n"
+
+        # Overall average time
+        all_times = [time for times in self.lap_times_data.values() for time in times]
+        overall_average = statistics.mean(all_times)
+        result += f"Overall Average Lap Time: {overall_average:.3f}\n"
+
