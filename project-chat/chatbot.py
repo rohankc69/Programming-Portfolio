@@ -50,3 +50,27 @@ def chatbot():
     agent_name = get_random_agent_name()
     print(f"My name is {agent_name}, and I'm here to help you!")
 
+    # Start the conversation
+    while True:
+        user_input = input(f"{user_name}: ")
+        
+        if user_input.lower() in ["bye", "quit", "exit"]:
+            print(f"{agent_name}: Goodbye, {user_name}! Have a great day!")
+            break
+        
+        # Get the agent's response
+        response = get_response(user_input, responses, random_responses)
+        
+        # Print agent's response
+        print(f"{agent_name}: {response}")
+
+        # Log the conversation
+        log_conversation(user_input, response)
+
+        # Randomly disconnect the chat
+        if random.random() < 0.05:  # 5% chance of disconnect
+            print(f"{agent_name}: Oops, looks like I got disconnected! Try again later.")
+            break
+
+if __name__ == "__main__":
+    chatbot()
