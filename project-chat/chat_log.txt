@@ -1,0 +1,9 @@
+User: voklagyo
+Agent: Could you please clarify what you're asking?
+
+User: coffee
+Agent: The campus coffee bar opens at 8 AM and closes at 6 PM.
+
+User: Coffee
+Agent: The campus coffee bar opens at 8 AM and closes at 6 PM.
+
