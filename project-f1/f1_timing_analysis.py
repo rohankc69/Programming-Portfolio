@@ -46,7 +46,6 @@ class F1TimingAnalyzer:
                         self.lap_times_data[code].append(lap_time)
                     except ValueError:
                         print(f"Warning: Invalid lap time format in line: {line.strip()}")
-
         except FileNotFoundError:
             print(f"Error: The file {self.lap_times_file} does not exist.")
             sys.exit(1)
@@ -125,44 +124,39 @@ class F1TimingAnalyzerApp(tk.Tk):
         self.result_text = tk.Text(self, wrap=tk.WORD, height=30, width=100)
         self.result_text.pack(padx=10, pady=10)
 
-        except FileNotFoundError:
-            print(f"Error: The file {self.lap_times_file} does not exist.")
-            sys.exit(1)
+        # Button to open lap times file
+        self.open_button = tk.Button(self, text="Open Lap Times File", command=self.open_lap_times_file)
+        self.open_button.pack(pady=10)
 
-    def display_results(self):
-        """Generate the analysis results as a string (for the frontend to display)."""
-        result = f"Grand Prix: {self.grand_prix_location}\n"
+        # Button to analyze the data
+        self.analyze_button = tk.Button(self, text="Analyze", command=self.analyze, state=tk.DISABLED)
+        self.analyze_button.pack(pady=10)
 
-        # Find the fastest lap overall
-        fastest_driver = None
-        fastest_time = float('inf')
+    def open_lap_times_file(self):
+        lap_times_file = filedialog.askopenfilename(title="Select Lap Times File", filetypes=[("Text Files", "*.txt")])
+        if lap_times_file:
+            self.analyzer.lap_times_file = lap_times_file
+            self.analyze_button.config(state=tk.NORMAL)
 
-        for code, times in self.lap_times_data.items():
-            driver_fastest_time = min(times)
-            if driver_fastest_time < fastest_time:
-                fastest_driver = code
-                fastest_time = driver_fastest_time
+    def analyze(self):
+        try:
+            self.analyzer.load_drivers_data()
+            self.analyzer.load_lap_times_data()
+            result = self.analyzer.display_results()
+            self.result_text.delete(1.0, tk.END)
+            self.result_text.insert(tk.END, result)
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
-        if fastest_driver:
-            driver_info = self.drivers_data.get(fastest_driver, {})
-            driver_name = driver_info.get('name', fastest_driver)
-            result += f"Fastest Lap: {fastest_time:.3f} by {driver_name} ({fastest_driver})\n\n"
 
-        # Fastest Lap Times per Driver
-        result += "Fastest Lap Times per Driver:\n"
-        fastest_times_table = []
-        for index, (code, times) in enumerate(self.lap_times_data.items(), 1):  # Start enumeration at 1
-            driver_info = self.drivers_data.get(code, {})
-            driver_name = driver_info.get('name', code)
-            driver_team = driver_info.get('team', 'Unknown')
-            fastest_time = min(times)
-            fastest_times_table.append([index, driver_name, code, driver_team, f"{fastest_time:.3f}"])
+def main():
+    drivers_file = "f1_drivers.txt"
+    analyzer = F1TimingAnalyzer(drivers_file, "")
 
-        result += tabulate(fastest_times_table, headers=["SN", "Driver", "Code", "Team", "Fastest Lap Time"], tablefmt="grid")
-        result += "\n\nAverage Times:\n"
+    # Create the Tkinter GUI application
+    app = F1TimingAnalyzerApp(analyzer)
+    app.mainloop()
 
-        # Overall average time
-        all_times = [time for times in self.lap_times_data.values() for time in times]
-        overall_average = statistics.mean(all_times)
-        result += f"Overall Average Lap Time: {overall_average:.3f}\n"
 
+if __name__ == "__main__":
+    main()
