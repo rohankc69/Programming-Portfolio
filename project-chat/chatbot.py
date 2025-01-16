@@ -2,7 +2,7 @@ import random
 import json
 
 
-agent_names = ["Alex", "Jordan", "Taylor", "Chris", "Morgan"]
+agent_names = ["Ram", "hari", "Gaurav", "Rohan", "Rejina"]
 
 
 def load_responses(file_path):
