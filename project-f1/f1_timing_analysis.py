@@ -7,154 +7,144 @@ from tkinter import filedialog, messagebox
 from tkinter import ttk
 
 
-class F1TimingAnalyzer:
-    def __init__(self, drivers_file, lap_times_file):
-        self.drivers_file = drivers_file
-        self.lap_times_file = lap_times_file
-        self.drivers_data = {}
-        self.lap_times_data = defaultdict(list)
-        self.grand_prix_location = ""
+class RaceAnalyzer:
+    def __init__(self, drivers_path, lap_times_path):
+        self.drivers_path = drivers_path
+        self.lap_times_path = lap_times_path
+        self.driver_info = {}
+        self.lap_data = defaultdict(list)
+        self.race_location = ""
 
-    def load_drivers_data(self):
-        """Load driver details from the drivers file."""
+    def read_drivers(self):
         try:
-            with open(self.drivers_file, 'r') as file:
+            with open(self.drivers_path, 'r') as file:
                 for line in file:
                     parts = line.strip().split(',')
                     if len(parts) == 4:
-                        car_number, code, name, team = parts
-                        self.drivers_data[code] = {
-                            'car_number': car_number,
+                        car_num, code, name, team = parts
+                        self.driver_info[code] = {
+                            'car_num': car_num,
                             'name': name,
                             'team': team
                         }
         except FileNotFoundError:
-            print(f"Error: The file {self.drivers_file} does not exist.")
+            print(f"Error: {self.drivers_path} not found.")
             sys.exit(1)
 
-    def load_lap_times_data(self):
-        """Load lap times from the lap times file."""
+    def read_lap_times(self):
         try:
-            with open(self.lap_times_file, 'r') as file:
+            with open(self.lap_times_path, 'r') as file:
                 lines = file.readlines()
-                self.grand_prix_location = lines[0].strip()
+                self.race_location = lines[0].strip()
 
                 for line in lines[1:]:
                     code = line[:3]
                     try:
                         lap_time = float(line[3:])
-                        self.lap_times_data[code].append(lap_time)
+                        self.lap_data[code].append(lap_time)
                     except ValueError:
-                        print(f"Warning: Invalid lap time format in line: {line.strip()}")
+                        print(f"Invalid lap time in line: {line.strip()}")
         except FileNotFoundError:
-            print(f"Error: The file {self.lap_times_file} does not exist.")
+            print(f"Error: {self.lap_times_path} not found.")
             sys.exit(1)
 
-    def display_results(self):
-        """Generate the analysis results as a string (for the frontend to display)."""
-        result = f"Grand Prix: {self.grand_prix_location}\n"
+    def generate_report(self):
+        report = f"Race: {self.race_location}\n"
 
-        # Find the fastest lap overall
-        fastest_driver = None
-        fastest_time = float('inf')
+        best_driver = None
+        best_time = float('inf')
 
-        for code, times in self.lap_times_data.items():
-            driver_fastest_time = min(times)
-            if driver_fastest_time < fastest_time:
-                fastest_driver = code
-                fastest_time = driver_fastest_time
+        for code, times in self.lap_data.items():
+            fastest = min(times)
+            if fastest < best_time:
+                best_driver = code
+                best_time = fastest
 
-        if fastest_driver:
-            driver_info = self.drivers_data.get(fastest_driver, {})
-            driver_name = driver_info.get('name', fastest_driver)
-            result += f"Fastest Lap: {fastest_time:.3f} by {driver_name} ({fastest_driver})\n\n"
+        if best_driver:
+            info = self.driver_info.get(best_driver, {})
+            name = info.get('name', best_driver)
+            report += f"Best Lap: {best_time:.3f} by {name} ({best_driver})\n\n"
 
-        # Fastest Lap Times per Driver
-        result += "Fastest Lap Times per Driver:\n"
-        fastest_times_table = []
-        for index, (code, times) in enumerate(self.lap_times_data.items(), 1):  # Start enumeration at 1
-            driver_info = self.drivers_data.get(code, {})
-            driver_name = driver_info.get('name', code)
-            driver_team = driver_info.get('team', 'Unknown')
-            fastest_time = min(times)
-            fastest_times_table.append([index, driver_name, code, driver_team, f"{fastest_time:.3f}"])
+        report += "Best Lap Per Driver:\n"
+        lap_table = []
+        for idx, (code, times) in enumerate(self.lap_data.items(), 1):
+            info = self.driver_info.get(code, {})
+            name = info.get('name', code)
+            team = info.get('team', 'Unknown')
+            fastest = min(times)
+            lap_table.append([idx, name, code, team, f"{fastest:.3f}"])
 
-        result += tabulate(fastest_times_table, headers=["SN", "Driver", "Code", "Team", "Fastest Lap Time"], tablefmt="grid")
-        result += "\n\nAverage Times:\n"
+        report += tabulate(lap_table, headers=["SN", "Driver", "Code", "Team", "Fastest Lap"], tablefmt="grid")
+        report += "\n\nAverage Lap Times:\n"
 
-        # Overall average time
-        all_times = [time for times in self.lap_times_data.values() for time in times]
-        overall_average = statistics.mean(all_times)
-        result += f"Overall Average Lap Time: {overall_average:.3f}\n"
+        all_times = [time for times in self.lap_data.values() for time in times]
+        overall_avg = statistics.mean(all_times)
+        report += f"Overall Average: {overall_avg:.3f}\n"
 
-        # Average lap times per driver
-        average_times_table = []
-        for index, (code, times) in enumerate(self.lap_times_data.items(), 1):  # Start enumeration at 1
-            driver_info = self.drivers_data.get(code, {})
-            driver_name = driver_info.get('name', code)
-            average_time = statistics.mean(times)
-            average_times_table.append([index, driver_name, code, f"{average_time:.3f}"])
+        avg_table = []
+        for idx, (code, times) in enumerate(self.lap_data.items(), 1):
+            info = self.driver_info.get(code, {})
+            name = info.get('name', code)
+            avg_time = statistics.mean(times)
+            avg_table.append([idx, name, code, f"{avg_time:.3f}"])
 
-        result += tabulate(average_times_table, headers=["SN", "Driver", "Code", "Average Lap Time"], tablefmt="grid")
+        report += tabulate(avg_table, headers=["SN", "Driver", "Code", "Average Lap"], tablefmt="grid")
 
-        # Fastest times in descending order
-        result += "\n\nFastest Lap Times in Descending Order:\n"
-        fastest_times = [(code, min(times)) for code, times in self.lap_times_data.items()]
-        fastest_times.sort(key=lambda x: x[1])
+        report += "\n\nBest Laps in Descending Order:\n"
+        sorted_times = sorted([(code, min(times)) for code, times in self.lap_data.items()], key=lambda x: x[1])
 
-        fastest_descending_table = []
-        for index, (code, time) in enumerate(fastest_times, 1):  # Start enumeration at 1
-            driver_info = self.drivers_data.get(code, {})
-            driver_name = driver_info.get('name', code)
-            fastest_descending_table.append([index, driver_name, code, f"{time:.3f}"])
+        sorted_table = []
+        for idx, (code, time) in enumerate(sorted_times, 1):
+            info = self.driver_info.get(code, {})
+            name = info.get('name', code)
+            sorted_table.append([idx, name, code, f"{time:.3f}"])
 
-        result += tabulate(fastest_descending_table, headers=["SN", "Driver", "Code", "Fastest Lap Time"], tablefmt="grid")
+        report += tabulate(sorted_table, headers=["SN", "Driver", "Code", "Best Lap"], tablefmt="grid")
 
-        return result
+        return report
 
 
-class F1TimingAnalyzerApp(tk.Tk):
+class RaceApp(tk.Tk):
     def __init__(self, analyzer):
         super().__init__()
         self.analyzer = analyzer
-        self.title("F1 Timing Analyzer")
+        self.title("Race Timing Analyzer")
         self.geometry("800x600")
 
-        # Text widget for displaying the results
-        self.result_text = tk.Text(self, wrap=tk.WORD, height=30, width=100)
-        self.result_text.pack(padx=10, pady=10)
+        self.result_area = tk.Text(self, wrap=tk.WORD, height=30, width=100)
+        self.result_area.pack(padx=10, pady=10)
 
-        # Button to open lap times file
-        self.open_button = tk.Button(self, text="Open Lap Times File", command=self.open_lap_times_file)
-        self.open_button.pack(pady=10)
+        self.load_button = tk.Button(self, text="Select Lap Times", command=self.select_lap_file)
+        self.load_button.pack(pady=10)
 
-        # Button to analyze the data
-        self.analyze_button = tk.Button(self, text="Analyze", command=self.analyze, state=tk.DISABLED)
+        self.analyze_button = tk.Button(self, text="Analyze", command=self.show_results, state=tk.DISABLED)
         self.analyze_button.pack(pady=10)
 
-    def open_lap_times_file(self):
-        lap_times_file = filedialog.askopenfilename(title="Select Lap Times File", filetypes=[("Text Files", "*.txt")])
-        if lap_times_file:
-            self.analyzer.lap_times_file = lap_times_file
+    def select_lap_file(self):
+        lap_path = filedialog.askopenfilename(title="Choose Lap Times File", filetypes=[("Text Files", "*.txt")])
+        if lap_path:
+            self.analyzer.lap_times_path = lap_path
             self.analyze_button.config(state=tk.NORMAL)
 
-    def analyze(self):
+    def show_results(self):
         try:
-            self.analyzer.load_drivers_data()
-            self.analyzer.load_lap_times_data()
-            result = self.analyzer.display_results()
-            self.result_text.delete(1.0, tk.END)
-            self.result_text.insert(tk.END, result)
+            self.analyzer.read_drivers()
+            self.analyzer.read_lap_times()
+            report = self.analyzer.generate_report()
+            self.result_area.delete(1.0, tk.END)
+            self.result_area.insert(tk.END, report)
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+            messagebox.showerror("Error", f"Something went wrong: {str(e)}")
 
 
 def main():
-    drivers_file = "f1_drivers.txt"
-    analyzer = F1TimingAnalyzer(drivers_file, "")
+    drivers_path = filedialog.askopenfilename(title="Choose Drivers File", filetypes=[("Text Files", "*.txt")])
+    if not drivers_path:
+        print("Drivers file not selected. Exiting.")
+        sys.exit(1)
 
-    # Create the Tkinter GUI application
-    app = F1TimingAnalyzerApp(analyzer)
+    analyzer = RaceAnalyzer(drivers_path, "")
+    app = RaceApp(analyzer)
     app.mainloop()
 
 

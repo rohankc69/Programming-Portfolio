@@ -1,0 +1,3 @@
+User: & C:/Users/PcModNepal/AppData/Local/Microsoft/WindowsApps/python3.11.exe "c:/Users/PcModNepal/Desktop/Python Code/Week 1/odd even.py"
+Agent: That's an interesting question, but I don't have an answer for it right now.
+
